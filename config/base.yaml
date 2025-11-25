@@ -5,8 +5,8 @@ rename:
   client_id: client_id_gen
 
 features:
-  categorical: [country, hour_bucket]
+  categorical: [country]
   numeric: [age, app_intensity]
   time:
     all_generated: [hour, dow, day, hour_sin, hour_cos, dow_sin, dow_cos,
-                    day_sin, day_cos, hour_bucket, is_weekend, is_payday_zone]
+                    day_sin, day_cos,  is_weekend]
