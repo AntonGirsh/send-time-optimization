@@ -1,6 +1,20 @@
+# Данные
+data/*.parquet
+data/raw/
+data/predictions/
+
+# Модели
+models/
+*.cbm
+*.joblib
+*.pkl
+
+# Кэш
 __pycache__/
 *.pyc
 .env
-data/raw/*.parquet
-models/*.cbm
-notebooks/*.ipynb_checkpoints
+.venv/
+
+# IDE
+.vscode/
+.ipynb_checkpoints/

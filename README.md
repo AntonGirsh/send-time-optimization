@@ -1,18 +1,15 @@
-# Send Time Optimization
+# Send-Time Optimization
 
-STO модель для выбора оптимального времени отправки офферов.
+Модель для выбора оптимального времени отправки офферов.
 
-## Запуск
+## Установка
+pip install -r requirements.txt
 
-Обучение:
-python train.py --gen
+## Генерация данных
+python run.py data --n 5000
 
-Инференс:
-python predict.py data/raw/new_clients.parquet
+## Обучение
+python run.py train data/synthetic.parquet --run-id 2025-11-25_v1
 
-## Структура
-
-- src/ — весь код
-- config/ — конфиги
-- data/ — данные
-- models/ — обученные модели
+## Инференс
+python run.py predict --model-run 2025-11-25_v1 data/raw/clients.parquet
