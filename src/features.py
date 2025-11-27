@@ -27,15 +27,20 @@ def build_time_grid() -> pd.DataFrame:
     grid = []
     for dow in range(7):
         for hour in range(24):
-            grid.append({'dow': dow, 'hour': hour, 'day': 15})
+            grid.append({'dow': dow, 'hour': hour, 'day': 15})  # day — любой
     time_grid = pd.DataFrame(grid)
     
-    # Применяем фичи
-    time_grid = create_time_features(pd.DataFrame({'send_ts': pd.to_datetime('2025-01-01')}), 'send_ts')
-    time_grid['send_ts'] = pd.to_datetime('2025-01-01')  # заглушка
-    
-    # Применяем к каждой строке
+    # Добавляем все циклические фичи вручную (без create_time_features!)
     time_grid['hour_sin'] = np.sin(2 * np.pi * time_grid['hour'] / 24)
-    # ... (аналогично для всех фичей из create_time_features)
+    time_grid['hour_cos'] = np.cos(2 * np.pi * time_grid['hour'] / 24)
+    time_grid['dow_sin'] = np.sin(2 * np.pi * time_grid['dow'] / 7)
+    time_grid['dow_cos'] = np.cos(2 * np.pi * time_grid['dow'] / 7)
+    time_grid['day_sin'] = np.sin(2 * np.pi * time_grid['day'] / 31)
+    time_grid['day_cos'] = np.cos(2 * np.pi * time_grid['day'] / 31)
+    
+    time_grid['is_weekend'] = (time_grid['dow'] >= 5).astype(int)
+    time_grid['hour_bucket'] = pd.cut(time_grid['hour'], bins=[0,6,12,18,24],
+                                      labels=['night', 'morning', 'day', 'evening'],
+                                      include_lowest=True)
     
     return time_grid

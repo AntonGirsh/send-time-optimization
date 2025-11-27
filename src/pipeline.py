@@ -4,6 +4,7 @@ from pathlib import Path
 import shutil
 from omegaconf import OmegaConf
 import pandas as pd
+import numpy as np
 
 from src.features import create_time_features, build_time_grid
 from src.models import train_bank_model, train_user_model, calibrate_model
@@ -69,9 +70,23 @@ def train_pipeline(data_path: Path, run_id: str):
     time_grid = build_time_grid()
 
     # 8. Валидационная метрика
-    val_p_bank = bank_calibrator.predict(bank_model.predict_proba(val_df[feature_cols])[:, 1])
-    val_p_user = user_calibrator.predict(user_model.predict_proba(val_user[feature_cols])[:, 1])
+    val_p_bank_raw = bank_model.predict_proba(val_df[feature_cols])[:, 1]
+    val_p_bank = bank_calibrator.predict(val_p_bank_raw)
+
+    # Предсказываем user только для тех, у кого bank == 1
+    val_bank_positive_mask = val_df['accept_bank'] == 1
+    if val_bank_positive_mask.any():
+        val_p_user_raw = user_model.predict_proba(val_df.loc[val_bank_positive_mask, feature_cols])[:, 1]
+        val_p_user_calibrated = user_calibrator.predict(val_p_user_raw)
+    else:
+        val_p_user_calibrated = np.array([])
+
+    # Заполняем нулями там, где bank == 0
+    val_p_user = np.zeros(len(val_df))
+    val_p_user[val_bank_positive_mask] = val_p_user_calibrated
+
     val_metric = expected_conversion_score(val_p_bank, val_p_user)
+    print(f"Validation Harmonic F1 (expected conversion): {val_metric:.5f}")
 
     # 9. Сохранение всего
     artifacts = {
