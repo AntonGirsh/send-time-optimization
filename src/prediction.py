@@ -1,73 +1,78 @@
-import pandas as pd
+# src/prediction.py
 import numpy as np
-from src.metrics import harmonic_f1
+import pandas as pd
 
-def predict_best_time_for_dataset(
+def predict_with_uplift(
+    artifacts: dict,
     df: pd.DataFrame,
-    time_grid: pd.DataFrame,
-    bank_model,
-    user_model,
-    bank_calibrator,
-    user_calibrator,
-    cfg,
-    top_k: int = 3
+    n_random: int = 20,
+    random_seed: int = 42
 ) -> pd.DataFrame:
-    cat_features = [f for f in cfg.features.categorical if f in df.columns]
-    num_features = [f for f in cfg.features.numeric if f in df.columns]
-    time_features = [f for f in cfg.features.time.all_generated if f in df.columns]
-    feature_cols = cat_features + num_features + time_features
-
-    for col in cat_features:
-        if col in df.columns:
-            df[col] = df[col].astype('string').fillna('missing')
+    """
+    Делает предикт + сравнение с random.
+    Возвращает таблицу с колонкой uplift_pct.
+    """
+    np.random.seed(random_seed)
+    
+    bank_model = artifacts['bank_model']
+    user_model = artifacts['user_model']
+    bank_calibrator = artifacts['bank_calibrator']
+    user_calibrator = artifacts['user_calibrator']
+    time_grid = artifacts['time_grid']
+    feature_cols = artifacts['feature_cols']
 
     results = []
-    for _, client_row in df.iterrows():
-        candidates = pd.DataFrame([client_row.to_dict()] * len(time_grid))
-        for col in time_grid.columns:
-            if col in feature_cols:
-                candidates[col] = time_grid[col].values
 
-        for col in cat_features:
-            if col in candidates.columns:
-                candidates[col] = candidates[col].astype('string').fillna('missing')
+    for _, row in df.iterrows():
+        client_id = row['client_id']
+        client_features = row[['country', 'age', 'app_intensity']].to_dict()
 
-        X = candidates[feature_cols]
+        # Создаём гриду 168 слотов для этого клиента
+        grid = time_grid.copy()
+        for k, v in client_features.items():
+            grid[k] = v
 
-        p_bank_raw = bank_model.predict_proba(X)[:, 1]
-        p_user_raw = user_model.predict_proba(X)[:, 1]
-        p_bank = bank_calibrator.predict(p_bank_raw)
-        p_user = user_calibrator.predict(p_user_raw)
+        # P(bank)
+        p_bank = bank_calibrator.predict(
+            bank_model.predict_proba(grid[feature_cols])[:, 1]
+        )
 
-        scores = harmonic_f1(p_bank, p_user)
-        best_idx = np.argsort(scores)[-top_k:][::-1]
+        # P(user | bank=1)
+        positive_mask = p_bank > 0.0
+        p_user_full = np.zeros(len(grid))
+        if positive_mask.any():
+            p_user_raw = user_model.predict_proba(grid.loc[positive_mask, feature_cols])[:, 1]
+            p_user_full[positive_mask] = user_calibrator.predict(p_user_raw)
 
-        client_results = {}
-        for rank, i in enumerate(best_idx, 1):
-            slot = time_grid.iloc[i]
-            dow = int(slot['dow'])
-            hour = int(slot['hour'])
-            dow_name = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'][dow]
+        # Итоговая конверсия
+        score = p_bank * p_user_full
 
-            client_results.update({
-                f'best_time_rank_{rank}_dow': dow,
-                f'best_time_rank_{rank}_hour': hour,
-                f'best_time_rank_{rank}_dow_name': dow_name,
-                f'best_time_rank_{rank}_time_str': f"{dow_name} {hour:02d}:00",
-                f'best_time_rank_{rank}_harmonic_f1': round(float(scores[i]), 5),
-                f'best_time_rank_{rank}_p_bank': round(float(p_bank[i]), 5),
-                f'best_time_rank_{rank}_p_user': round(float(p_user[i]), 5),
-            })
+        # Лучшее время
+        best_idx = score.argmax()
+        best_score = score[best_idx]
 
-        if 'client_id' in client_row:
-            client_results['client_id'] = client_row['client_id']
+        # Random времена
+        random_indices = np.random.choice(len(grid), size=n_random, replace=True)
+        random_score = score[random_indices].mean()
 
-        results.append(client_results)
+        # Uplift
+        uplift_abs = best_score - random_score
+        uplift_pct = uplift_abs / random_score if random_score > 0 else 0
+
+        results.append({
+            'client_id': int(client_id),
+            'best_hour': int(time_grid.iloc[best_idx]['hour']),
+            'best_dow': int(time_grid.iloc[best_idx]['dow']),
+            'best_score': float(best_score),
+            'random_score': float(random_score),
+            'uplift_abs': float(uplift_abs),
+            'uplift_pct': float(uplift_pct),
+        })
 
     result_df = pd.DataFrame(results)
-    if 'client_id' in df.columns:
-        final_df = df[['client_id']].reset_index(drop=True).merge(result_df, on='client_id', how='left')
-    else:
-        final_df = pd.concat([df.reset_index(drop=True), result_df], axis=1)
+    
+    print(f"Expected conversion (model):   {result_df['best_score'].mean():.4f}")
+    print(f"Expected conversion (random):  {result_df['random_score'].mean():.4f}")
+    print(f"Mean uplift:                  +{result_df['uplift_pct'].mean()*100:5.2f}%")
 
-    return final_df
+    return result_df
