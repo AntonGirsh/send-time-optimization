@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 
+# перевод времени в циклическое
 def create_time_features(df: pd.DataFrame, ts_column: str = 'send_ts') -> pd.DataFrame:
     df = df.copy()
     ts = pd.to_datetime(df[ts_column])
@@ -22,7 +23,19 @@ def create_time_features(df: pd.DataFrame, ts_column: str = 'send_ts') -> pd.Dat
 
     return df
 
+# добавление фичей, связанных со временем
+def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df['hour']       = df['send_ts'].dt.hour
+    df['dow']        = df['send_ts'].dt.dayofweek
+    df['is_weekend'] = df['dow'].isin([5, 6])
+    df['is_morning'] = df['hour'].between(7, 11)
+    df['is_lunch']   = df['hour'].between(12, 14)
+    df['is_evening'] = df['hour'].between(18, 22)
+    df['is_friday']  = df['dow'] == 4
+    return df
 
+# построение сетки
 def build_time_grid() -> pd.DataFrame:
     grid = []
     for dow in range(7):
