@@ -6,7 +6,7 @@ from omegaconf import OmegaConf
 import pandas as pd
 import numpy as np
 
-from src.features import create_time_features, build_time_grid
+from src.features import create_time_features, build_time_grid, add_time_features
 from src.models import train_bank_model, train_user_model, calibrate_model
 from src.prediction import predict_best_time_for_dataset
 from src.metrics import expected_conversion_score
@@ -116,8 +116,10 @@ def predict_pipeline(model_run: str, data_path: Path, output_path: Path):
     artifacts = joblib.load(run_dir / "artifacts.joblib")
 
     df = pd.read_parquet(data_path)
+    df = add_time_features(df)
+
     result_df = predict_best_time_for_dataset(
-        df=df.copy(),
+        df=df.copy(),        
         time_grid=artifacts['time_grid'],
         bank_model=artifacts['bank_model'],
         user_model=artifacts['user_model'],
