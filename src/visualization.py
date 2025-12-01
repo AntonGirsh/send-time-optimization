@@ -36,7 +36,7 @@ def uplift_heatmap(
     fig.update_layout(
         yaxis=dict(
             tickvals=list(range(7)),
-            ticktext=['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+            ticktext=['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
         ),
         coloraxis_colorbar=dict(title="Uplift, %")
     )
