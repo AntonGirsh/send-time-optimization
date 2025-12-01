@@ -6,6 +6,8 @@ from src.prediction import predict_best_time_for_dataset
 from src.visualization import app as viz_app
 import pandas as pd
 import joblib
+from src.interpretation import app as interp_app
+
 
 app = typer.Typer()
 
@@ -36,6 +38,8 @@ def predict(
     typer.echo(f"Предикты + uplift сохранены → {output}")
 
 app.add_typer(viz_app, name="viz", help="Визуализация результатов")
+
+app.add_typer(interp_app, name="interp", help="Интерпретация модели: кто получил максимальный uplift")
 
 if __name__ == "__main__":
     try:
