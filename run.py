@@ -2,8 +2,10 @@ import typer
 from pathlib import Path
 from src.data_generation import generate_and_save
 from src.pipeline import train_pipeline, predict_pipeline
-from src.prediction import predict_with_uplift
+from src.prediction import predict_best_time_for_dataset
 from src.visualization import app as viz_app
+import pandas as pd
+import joblib
 
 app = typer.Typer()
 
@@ -28,7 +30,7 @@ def predict(
     df = pd.read_parquet(input_data)
     artifacts = joblib.load(f"models/{model_run}/artifacts.joblib")
     
-    result_df = predict_with_uplift(artifacts, df)
+    result_df = predict_best_time_for_dataset(artifacts, df)
     output.parent.mkdir(parents=True, exist_ok=True)
     result_df.to_parquet(output, index=False)
     typer.echo(f"Предикты + uplift сохранены → {output}")

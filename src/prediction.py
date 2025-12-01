@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 
-def predict_with_uplift(
+def predict_best_time_for_dataset(
     artifacts: dict,
     df: pd.DataFrame,
     n_random: int = 20,
