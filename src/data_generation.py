@@ -32,24 +32,33 @@ def generate_and_save(n_samples: int = 5000, path: Path = Path("data/synthetic.p
 
     # ГРУППЫ С ЯВНЫМИ ВРЕМЕННЫМИ ПРЕДПОЧТЕНИЯМИ (каждая строчка — отдельная группа!)
 
-    # Молодые активные — очень любят пятницу вечером
-    df['p_bank'] += ((df['age'] < 35) & (df['app_intensity'] > 7.0) & (df['is_friday'] & df['is_evening'])) * 0.10
-    df['p_user'] += ((df['age'] < 35) & (df['app_intensity'] > 7.0) & (df['is_friday'] & df['is_evening'])) * 0.10
+    # # Молодые активные — очень любят пятницу вечером
+    # df['p_bank'] += ((df['age'] < 35) & (df['app_intensity'] > 7.0) & (df['is_friday'] & df['is_evening'])) * 0.10
+    # df['p_user'] += ((df['age'] < 35) & (df['app_intensity'] > 7.0) & (df['is_friday'] & df['is_evening'])) * 0.10
 
-    # Люди 40+ — уважают утро будних дней
-    df['p_bank'] += ((df['age'] >= 40) & (df['dow'].between(0, 3)) & df['is_morning']) * 0.12
-    df['p_user'] += ((df['age'] >= 40) & (df['dow'].between(0, 3)) & df['is_morning']) * 0.12
+    # # Люди 40+ — уважают утро будних дней
+    # df['p_bank'] += ((df['age'] >= 40) & (df['dow'].between(0, 3)) & df['is_morning']) * 0.12
+    # df['p_user'] += ((df['age'] >= 40) & (df['dow'].between(0, 3)) & df['is_morning']) * 0.12
 
-    # Все любят обед (особенно в будни)
-    df['p_bank'] += (df['is_lunch'] & ~df['is_weekend']) * 0.2
-    df['p_user'] += (df['is_lunch'] & ~df['is_weekend']) * 0.2
+    # # Все любят обед (особенно в будни)
+    df['p_bank'] += (df['is_lunch'] & ~df['is_weekend'] & (df['app_intensity'] < 7.0)) * 0.2
+    df['p_user'] += (df['is_lunch'] & ~df['is_weekend'] & (df['app_intensity'] < 7.0)) * 0.2
 
-    # Выходные утром 
+    # # Выходные утром 
     df['p_bank'] += (df['is_weekend'] & df['is_morning']&(df['country']=='RU')) * 0.1
     df['p_user'] += (df['is_weekend'] & df['is_morning']&(df['country']=='RU')) * 0.1
 
-    # Лёгкий вечерний буст для всех моложе 30
-    df['p_user'] += (df['is_evening'] & df['age'] <= 30) * 0.07
+    # # Лёгкий буст в среду для всех моложе 30
+    df['p_bank'] += ((df['dow'] == 3) & df['age'] <= 30) * 0.07
+    df['p_user'] += ((df['dow'] == 3) & df['age'] <= 30) * 0.07
+
+    # Группа 1
+    df['p_bank'] += ((df['age'] >= 40) & (df['dow'].between(0, 1))) * 0.12
+    df['p_user'] += ((df['age'] >= 40) & (df['dow'].between(0, 1))) * 0.12
+  
+    # Группа 2
+    df['p_bank'] += ((df['app_intensity'] > 7.0) & df['is_evening']) * 0.05
+    df['p_user'] += ((df['app_intensity'] > 7.0) & df['is_evening']) * 0.05
 
     # 5. Клиппим, чтобы не было 0 и 1
     df['p_bank'] = df['p_bank'].clip(0.05, 0.98)
