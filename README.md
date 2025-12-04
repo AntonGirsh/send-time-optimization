@@ -25,3 +25,8 @@ python run.py viz uplift-heatmap reports/pred.parquet
 ## Интерпретация
 
 python run.py interp profile-top-slots -p reports/pred.parquet --min-uplift 0.03 --min-clients-abs 100
+
+## feature_importance
+
+python run.py fi show 2025-12-01_v2 --top 15
+
