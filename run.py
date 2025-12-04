@@ -7,6 +7,7 @@ from src.visualization import app as viz_app
 import pandas as pd
 import joblib
 from src.interpretation import app as interp_app
+from src.feature_importance import app as fi_app
 
 
 app = typer.Typer()
@@ -40,6 +41,9 @@ def predict(
 app.add_typer(viz_app, name="viz", help="Визуализация результатов")
 
 app.add_typer(interp_app, name="interp", help="Интерпретация модели: кто получил максимальный uplift")
+
+app.add_typer(fi_app, name="fi", help="Feature Importance — анализ важности фичей")
+
 
 if __name__ == "__main__":
     try:

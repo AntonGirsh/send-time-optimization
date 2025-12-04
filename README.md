@@ -1,6 +1,4 @@
-# Send-Time Optimization
-
-Модель для выбора оптимального времени отправки офферов.
+# Send-Time Optimization. Модель для выбора оптимального времени отправки офферов
 
 ## Установка
 
@@ -16,7 +14,7 @@ python run.py train data/synthetic.parquet --run-id 2025-12-01_v1
 
 ## Инференс
 
-python run.py predict 2025-11-25_v1 data/synthetic.parquet --output reports/pred.parquet
+python run.py predict 2025-12-01_v1 data/synthetic.parquet --output reports/pred.parquet
 
 ## Визуализация
 
@@ -28,5 +26,4 @@ python run.py interp profile-top-slots -p reports/pred.parquet --min-uplift 0.03
 
 ## feature_importance
 
-python run.py fi show 2025-12-01_v2 --top 15
-
+python run.py f show 2025-12-01_v2 --top 15

@@ -10,6 +10,8 @@ from src.features import create_time_features, build_time_grid, add_time_feature
 from src.models import train_bank_model, train_user_model, calibrate_model
 from src.prediction import predict_best_time_for_dataset
 from src.metrics import expected_conversion_score
+import json
+
 
 def train_pipeline(data_path: Path, run_id: str):
     cfg = OmegaConf.load("config/base.yaml")
@@ -90,21 +92,46 @@ def train_pipeline(data_path: Path, run_id: str):
 
     # 9. Сохранение всего
     artifacts = {
-        'bank_model': bank_model,
-        'user_model': user_model,
-        'bank_calibrator': bank_calibrator,
-        'user_calibrator': user_calibrator,
-        'time_grid': time_grid,
-        'feature_cols': feature_cols,
-        'cat_features': cat_features,
+    'bank_model': bank_model,
+    'user_model': user_model,
+    'bank_calibrator': bank_calibrator,
+    'user_calibrator': user_calibrator,
+    'time_grid': time_grid,
+    'feature_cols': feature_cols,
+    'cat_features': cat_features,
     }
     joblib.dump(artifacts, run_dir / "artifacts.joblib")
 
-    # копия конфига + метрика
+
+    # 1. config.json — список фичей
+    (run_dir / "config.json").write_text(
+        json.dumps({"features": feature_cols}, indent=2)
+    )
+
+    # 2. feature importance для обеих моделей
+    bank_importance = pd.DataFrame({
+        "feature": feature_cols,
+        "importance": bank_model.get_feature_importance()
+    })
+    user_importance = pd.DataFrame({
+        "feature": feature_cols,
+        "importance": user_model.get_feature_importance()
+    })
+
+    bank_importance.to_json(run_dir / "bank_model_feature_importance.json", orient="records", indent=2)
+    user_importance.to_json(run_dir / "user_model_feature_importance.json", orient="records", indent=2)
+
+    # 3. metrics.json (был у тебя, но сделаем красиво)
+    (run_dir / "metrics.json").write_text(
+        json.dumps({"val_harmonic_f1": float(val_metric)}, indent=2)
+    )
+
+    # копия конфига + метрика (оставляем как было)
     shutil.copy("config/base.yaml", run_dir / "config_used.yaml")
-    (run_dir / "metrics.json").write_text(f'{{"val_harmonic_f1": {val_metric:.5f}}}')
 
     print(f"Готово. Метрика на валидации: {val_metric:.5f}")
+    print(f"   Сохранено в: {run_dir}")
+    print(f"   → artifacts.joblib, config.json, *_feature_importance.json")
 
 
 def predict_pipeline(model_run: str, data_path: Path, output_path: Path):
