@@ -20,6 +20,7 @@ python run.py data --n <число элементов> --output <адрес со
 python run.py data --n 50000 --output data/synthetic.parquet
 
 ## Обучение
+
 вход: данные в .parquet
 выход: обученная модель
 
@@ -35,6 +36,7 @@ python run.py predict <имя обученной модели> <датасет .
 python run.py predict 2025-12-01_v1 data/synthetic.parquet --output reports/pred.parquet
 
 ## Визуализация
+
 вход: датасет с результатом инференса в .parquet
 выход: heatmap с временными слотами
 
@@ -42,6 +44,7 @@ python run.py viz uplift-heatmap reports/pred.parquet
 python run.py viz uplift-heatmap <датасет с результатом инференса в .parquet>
 
 ## Интерпретация
+
 вход: датасет с результатом инференса в .parquet
 выход: перечисление наиболее заметных групп пользователей
 
@@ -49,6 +52,7 @@ python run.py interp profile-top-slots -p <датасет с результат�
 python run.py interp profile-top-slots -p reports/pred.parquet --min-uplift 0.03 --min-clients-abs 100
 
 ## feature_importance
+
 вход: обученная модель
 выход: файлы с графиками feature_importance
 
